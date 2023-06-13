@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{Read, Seek};
+use std::io::{Read};
 use std::path::Path;
 
 pub struct CIAHeaderInfo {
@@ -11,6 +11,23 @@ pub struct CIAHeaderInfo {
     tmd_size: u32,
     meta_size: u32,
     content_size: u64
+}
+
+impl CIAHeaderInfo {
+    fn get_cert_chain_offset(&self) -> u32 {
+        self.size + self.size % 64
+    }
+
+    fn get_ticket_offset(&self) -> u32 {
+        (self.size + self.size % 64) +
+            (self.cert_chain_size + self.cert_chain_size % 64)
+    }
+
+    fn get_tmd_offset(&self) -> u32 {
+        (self.size + self.size % 64) +
+            (self.cert_chain_size + self.cert_chain_size % 64) +
+            (self.ticket_size + self.ticket_size % 64)
+    }
 }
 
 pub fn read(filepath: &str) -> CIAHeaderInfo {
@@ -59,6 +76,6 @@ mod tests {
     fn it_works() {
         let info = read("E:/gm9/out/0004000000126100_v00.standard.cia");
         println!("{}", info.size + info.cert_chain_size + info.ticket_size);
-        println!("{}", info.size + info.size);
+        println!("{}", info.get_ticket_offset());
     }
 }
