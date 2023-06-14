@@ -4,18 +4,25 @@ use std::io::{Seek, SeekFrom, Read};
 
 use crate::cia_header::CIAHeaderInfo;
 
-const RSA4096: u32 = 0x010003;
-const RSA2048: u32 = 0x010004;
-const ECDSA: u32 = 0x010005;
+pub const RSA4096: u32 = 0x010003;
+pub const RSA2048: u32 = 0x010004;
+pub const ECDSA: u32 = 0x010005;
 
-struct Ticket {
+pub struct Ticket {
     signature_type: u32,
     signature: Vec<u8>,
+    ecc_public_key: [u8; 0x3C],
+    version: u8,
+    ca_crl_version: u8,
+    signer_crl_version: u8,
+    titlekey: [u8; 16],
+    ticket_id: u64,
+    console_id: u32,
     title_id: u64
 }
 
 impl Ticket {
-    fn get_ticket_id_hex_string(&self) -> String {
+    pub fn get_ticket_id_hex_string(&self) -> String {
         let title_id = self.title_id;
         format!("{title_id:016x}")
     }
@@ -51,7 +58,7 @@ fn get_ticket(header_info: &CIAHeaderInfo) -> Ticket {
     }
     let mut issuer_buf = [0; 64];
     let mut ecc_public_key_buf = [0; 0x3C];
-    let mut version_bef = [0; 1];
+    let mut version_buf = [0; 1];
     let mut ca_crl_version_buf = [0; 1];
     let mut signer_crl_version_buf = [0; 1];
     let mut titlekey_buf = [0; 16];
@@ -61,7 +68,7 @@ fn get_ticket(header_info: &CIAHeaderInfo) -> Ticket {
 
     file.read(&mut issuer_buf).unwrap();
     file.read(&mut ecc_public_key_buf).unwrap();
-    file.read(&mut version_bef).unwrap();
+    file.read(&mut version_buf).unwrap();
     file.read(&mut ca_crl_version_buf).unwrap();
     file.read(&mut signer_crl_version_buf).unwrap();
     file.read(&mut titlekey_buf).unwrap();
@@ -73,6 +80,13 @@ fn get_ticket(header_info: &CIAHeaderInfo) -> Ticket {
     Ticket {
         signature_type,
         signature,
+        ecc_public_key: ecc_public_key_buf,
+        version: version_buf[0],
+        ca_crl_version: ca_crl_version_buf[0],
+        signer_crl_version: signer_crl_version_buf[0],
+        titlekey: titlekey_buf,
+        ticket_id: u64::from_be_bytes(ticket_id_buf),
+        console_id: u32::from_be_bytes(console_id_buf),
         title_id: u64::from_be_bytes(title_id_buf)
     }
 }
