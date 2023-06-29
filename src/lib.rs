@@ -1,2 +1,2 @@
-mod cia_header;
-mod ticket;
+pub mod cia_header;
+pub mod ticket;
