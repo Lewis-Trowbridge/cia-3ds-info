@@ -69,13 +69,3 @@ impl CIAHeaderInfo {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let info = CIAHeaderInfo::open_header("D:/gm9/out/0004000000126100_v00.standard.cia");
-    }
-}

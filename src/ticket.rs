@@ -92,19 +92,3 @@ impl CIAHeaderInfo {
         }
     }
 }
-
-
-
-#[cfg(test)]
-mod tests {
-    use crate::cia_header::CIAHeaderInfo;
-
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let header = CIAHeaderInfo::open_header("D:/gm9/out/0004000000126100_v00.standard.cia");
-        let ticket = header.get_ticket();
-        assert_eq!(ticket.get_ticket_id_hex_string(), "0004000000126100")
-    }
-}
