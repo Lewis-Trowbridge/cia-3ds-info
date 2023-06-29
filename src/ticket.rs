@@ -28,79 +28,83 @@ impl Ticket {
     }
 }
 
-fn get_ticket(header_info: &CIAHeaderInfo) -> Ticket {
-    let path = Path::new(header_info.filepath);
+impl CIAHeaderInfo {
+    fn get_ticket(&self) -> Ticket {
+        let path = Path::new(self.filepath);
 
-    let mut file = File::open(&path).expect("Could not open file.");
-    let mut type_buf = [0; 4];
-    file.seek(SeekFrom::Start(header_info.get_ticket_offset().into())).unwrap();
-    file.read(&mut type_buf).unwrap();
-    
-    let signature_type = u32::from_be_bytes(type_buf);
-    let mut signature = Vec::new();
-    if signature_type == RSA2048 {
-        let mut sig_buf = [0; 0x100];
-        file.read(&mut sig_buf).unwrap();
-        signature = sig_buf.to_vec();
-        file.seek(SeekFrom::Current(0x3C)).unwrap();
-    }
-    else if signature_type == RSA4096 {
-        let mut sig_buf = [0; 0x200];
-        file.read(&mut sig_buf).unwrap();
-        signature = sig_buf.to_vec();
-        file.seek(SeekFrom::Current(0x3C)).unwrap();
-    }
-    else if signature_type == ECDSA {
-        let mut sig_buf = [0; 0x3C];
-        file.read(&mut sig_buf).unwrap();
-        signature = sig_buf.to_vec();
-        file.seek(SeekFrom::Current(0x40)).unwrap();
-    }
-    let mut issuer_buf = [0; 64];
-    let mut ecc_public_key_buf = [0; 0x3C];
-    let mut version_buf = [0; 1];
-    let mut ca_crl_version_buf = [0; 1];
-    let mut signer_crl_version_buf = [0; 1];
-    let mut titlekey_buf = [0; 16];
-    let mut ticket_id_buf = [0; 8];
-    let mut console_id_buf = [0; 4];
-    let mut title_id_buf = [0; 8];
+        let mut file = File::open(&path).expect("Could not open file.");
+        let mut type_buf = [0; 4];
+        file.seek(SeekFrom::Start(self.get_ticket_offset().into())).unwrap();
+        file.read(&mut type_buf).unwrap();
 
-    file.read(&mut issuer_buf).unwrap();
-    file.read(&mut ecc_public_key_buf).unwrap();
-    file.read(&mut version_buf).unwrap();
-    file.read(&mut ca_crl_version_buf).unwrap();
-    file.read(&mut signer_crl_version_buf).unwrap();
-    file.read(&mut titlekey_buf).unwrap();
-    file.seek(SeekFrom::Current(1)).unwrap();
-    file.read(&mut ticket_id_buf).unwrap();
-    file.read(&mut console_id_buf).unwrap();
-    file.read(&mut title_id_buf).unwrap();
+        let signature_type = u32::from_be_bytes(type_buf);
+        let mut signature = Vec::new();
+        if signature_type == RSA2048 {
+            let mut sig_buf = [0; 0x100];
+            file.read(&mut sig_buf).unwrap();
+            signature = sig_buf.to_vec();
+            file.seek(SeekFrom::Current(0x3C)).unwrap();
+        }
+        else if signature_type == RSA4096 {
+            let mut sig_buf = [0; 0x200];
+            file.read(&mut sig_buf).unwrap();
+            signature = sig_buf.to_vec();
+            file.seek(SeekFrom::Current(0x3C)).unwrap();
+        }
+        else if signature_type == ECDSA {
+            let mut sig_buf = [0; 0x3C];
+            file.read(&mut sig_buf).unwrap();
+            signature = sig_buf.to_vec();
+            file.seek(SeekFrom::Current(0x40)).unwrap();
+        }
+        let mut issuer_buf = [0; 64];
+        let mut ecc_public_key_buf = [0; 0x3C];
+        let mut version_buf = [0; 1];
+        let mut ca_crl_version_buf = [0; 1];
+        let mut signer_crl_version_buf = [0; 1];
+        let mut titlekey_buf = [0; 16];
+        let mut ticket_id_buf = [0; 8];
+        let mut console_id_buf = [0; 4];
+        let mut title_id_buf = [0; 8];
 
-    Ticket {
-        signature_type,
-        signature,
-        ecc_public_key: ecc_public_key_buf,
-        version: version_buf[0],
-        ca_crl_version: ca_crl_version_buf[0],
-        signer_crl_version: signer_crl_version_buf[0],
-        titlekey: titlekey_buf,
-        ticket_id: u64::from_be_bytes(ticket_id_buf),
-        console_id: u32::from_be_bytes(console_id_buf),
-        title_id: u64::from_be_bytes(title_id_buf)
+        file.read(&mut issuer_buf).unwrap();
+        file.read(&mut ecc_public_key_buf).unwrap();
+        file.read(&mut version_buf).unwrap();
+        file.read(&mut ca_crl_version_buf).unwrap();
+        file.read(&mut signer_crl_version_buf).unwrap();
+        file.read(&mut titlekey_buf).unwrap();
+        file.seek(SeekFrom::Current(1)).unwrap();
+        file.read(&mut ticket_id_buf).unwrap();
+        file.read(&mut console_id_buf).unwrap();
+        file.read(&mut title_id_buf).unwrap();
+
+        Ticket {
+            signature_type,
+            signature,
+            ecc_public_key: ecc_public_key_buf,
+            version: version_buf[0],
+            ca_crl_version: ca_crl_version_buf[0],
+            signer_crl_version: signer_crl_version_buf[0],
+            titlekey: titlekey_buf,
+            ticket_id: u64::from_be_bytes(ticket_id_buf),
+            console_id: u32::from_be_bytes(console_id_buf),
+            title_id: u64::from_be_bytes(title_id_buf)
+        }
     }
 }
 
+
+
 #[cfg(test)]
 mod tests {
-    use crate::cia_header::open_header;
+    use crate::cia_header::CIAHeaderInfo;
 
     use super::*;
 
     #[test]
     fn it_works() {
-        let header = open_header("E:/gm9/out/0004000000126100_v00.standard.cia");
-        let ticket = get_ticket(&header);
+        let header = CIAHeaderInfo::open_header("D:/gm9/out/0004000000126100_v00.standard.cia");
+        let ticket = header.get_ticket();
         assert_eq!(ticket.get_ticket_id_hex_string(), "0004000000126100")
     }
 }
